@@ -82,14 +82,15 @@
 
 
 ;;;; Tests
-(ert-deftest test-marine-next-frame ()
-  (let ((scene (make-marine-scene
-                :frames        marine-list-attacked-5
-                :current-frame marine-image-attacked-right-5
-                :on-next-frame (lambda (_current _frames) (nth 0 marine-list-attacked-5)))))
+(ert-deftest test-marine-on-next-frame ()
+  (let* ((frames (list 1 2 3 4))
+         (scene (make-marine-scene
+                :frames        frames
+                :current-frame 3
+                :on-next-frame (lambda (_current frames) (nth 0 frames)))))
     (should (equal
              (marine-get-next-frame scene)
-             marine-image-attacked-left-5))))
+             1))))
 
 (ert-deftest test-marine-get-random-frame ()
   (let* ((current-frame 1)
