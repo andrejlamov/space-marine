@@ -195,13 +195,13 @@
            (ouch       (marine-make-scene 'wicked current-health next-scene)))
       (marine-reset-current-scene ouch))))
 
-(defun marine-on-compilation-start ()
+(defun marine-on-compilation-start (_)
   (let* ((health (marine-scene-health marine-current-scene))
          (new-scene (marine-make-scene 'attacked health)))
     (marine-reset-current-scene new-scene)))
 
 (defun marine-add-compile-hooks ()
-  (add-hook 'compilation-start-hook 'marine-on-compilation-start)
+  (add-hook 'compilation-start-hook       'marine-on-compilation-start)
   (add-hook 'compilation-finish-functions 'marine-on-compilation-finish))
 
 (defun marine-main ()
