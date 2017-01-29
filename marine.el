@@ -60,11 +60,6 @@
       (_ nil))
     ))
 
-
-(setq marine-current-scene (marine-make-scene 'glance 5))
-(setq marine-current-image (marine-scene-current-frame marine-current-scene))
-
-
 (defun marine-get-next-frame (scene)
   (let* ((on-next-frame (marine-scene-on-next-frame scene))
          (frames        (marine-scene-frames scene))
@@ -79,6 +74,7 @@
 
 (defun marine-reset-current-scene (new-scene)
   (setq marine-current-scene new-scene))
+
 
 ;;;; Tests
 (ert-deftest test-marine-next-frame ()
@@ -105,9 +101,12 @@
       (equal scene-1 (marine-make-scene-0 marine-list-glance-2 2))
       (equal scene-2 (marine-make-scene-0 marine-list-glance-5 5))))))
 
-;;;; Main
 
-(defun marine-init-segment ()
+;;;; Main
+(setq marine-current-scene (marine-make-scene 'glance 5))
+(setq marine-current-image (marine-scene-current-frame marine-current-scene))
+
+(defun marine-init-spaceline-segment ()
   (when (not noninteractive)
     (spaceline-define-segment nyan-cat
       "I'M TOO YOUNG TO DIE."
@@ -139,12 +138,10 @@
   (add-hook 'compilation-finish-functions (lambda (buf msg)
                                             (if (string-match "exited abnormally" msg)
                                                (marine-reset-current-scene (marine-make-scene 'glance 2))
-                                              (marine-reset-current-scene (marine-make-scene 'glance 5)))))
-  )
+                                              (marine-reset-current-scene (marine-make-scene 'glance 5))))))
 
 (defun marine-main ()
   (interactive)
-  (marine-init-segment)
+  (marine-init-spaceline-segment)
   (marine-start-async-render-loop)
   (marine-add-compile-hooks))
-
