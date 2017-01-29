@@ -30,13 +30,15 @@
 (defconst marine-image-attacked-left-2     (marine-load-image "attacked-left-2.xpm"))
 (defconst marine-image-attacked-right-2    (marine-load-image "attacked-right-2.xpm"))
 (defconst marine-image-attacked-straight-2 (marine-load-image "attacked-straight-2.xpm"))
+(defconst marine-image-ouch-2              (marine-load-image "ouch-2.xpm"))
 
 (defconst marine-list-glance-5   (list marine-image-straight-5          marine-image-glance-left-5   marine-image-glance-right-5))
 (defconst marine-list-glance-2   (list marine-image-straight-2          marine-image-glance-left-2   marine-image-glance-right-2))
 (defconst marine-list-attacked-5 (list marine-image-attacked-straight-5 marine-image-attacked-left-5 marine-image-attacked-right-5))
 (defconst marine-list-attacked-2 (list marine-image-attacked-straight-2 marine-image-attacked-left-2 marine-image-attacked-right-2))
+(defconst marine-list-ouch-2     (list marine-image-ouch-2))
 
-(cl-defstruct marine-scene frames current-frame on-next-frame health)
+(cl-defstruct marine-scene frames current-frame on-next-frame health duration next-scene)
 
 (defun marine-get-next-not-current-frame (current-frame frames idx-gen)
   (let* ((not-current-list (marine-filter-not-current current-frame frames))
@@ -47,20 +49,26 @@
 (defun marine-get-next-random-frame (current-frame frames)
   (marine-get-next-not-current-frame current-frame frames 'random))
 
-(defun marine-make-scene-0 (image-list health)
+(defun marine-get-next-same-frame (current-frame _frames)
+  current-frame)
+
+(defun marine-make-scene-0 (image-list health loops on-next-frame &optional next-scene)
   (make-marine-scene
    :frames image-list
    :current-frame (car image-list) ;; always use first image by default
-   :on-next-frame 'marine-get-next-random-frame
-   :health health))
+   :on-next-frame on-next-frame
+   :health health
+   :duration loops
+   :next-scene next-scene))
 
-(defun marine-make-scene (type health)
+(defun marine-make-scene (type health &optional next-scene)
   (let ((tuple (list type health)))
     (pcase tuple
-      (`,'(glance 2)   (marine-make-scene-0 marine-list-glance-2   health))
-      (`,'(glance 5)   (marine-make-scene-0 marine-list-glance-5   health))
-      (`,'(attacked 2) (marine-make-scene-0 marine-list-attacked-2 health))
-      (`,'(attacked 5) (marine-make-scene-0 marine-list-attacked-5 health))
+      (`,'(glance   2) (marine-make-scene-0 marine-list-glance-2   2 'infinite 'marine-get-next-random-frame))
+      (`,'(glance   5) (marine-make-scene-0 marine-list-glance-5   5 'infinite 'marine-get-next-random-frame))
+      (`,'(attacked 2) (marine-make-scene-0 marine-list-attacked-2 2 'infinite 'marine-get-next-random-frame))
+      (`,'(attacked 5) (marine-make-scene-0 marine-list-attacked-5 5 'infinite 'marine-get-next-random-frame))
+      (`,'(ouch     2) (marine-make-scene-0 marine-list-ouch-2     2 1         'marine-get-next-same-frame next-scene))
       (_ nil))
     ))
 
@@ -76,18 +84,29 @@
    (lambda (frame) (not (eq frame current-frame)))
    frames))
 
-(defun marine-reset-current-scene (new-scene)
-  (setq marine-current-scene new-scene)
-  (setq marine-current-image (marine-scene-current-frame new-scene)))
+(defun marine-decrement-duration (scene)
+  (let ((loops (marine-scene-duration scene)))
+    (pcase loops
+      (`infinite nil)
+      (_         (cl-decf (marine-scene-duration scene))))
+    scene))
 
+(defun marine-next-scene (scene)
+  (let ((loops (marine-scene-duration scene)))
+    (pcase loops
+      (`infinite scene)
+      (0         (marine-scene-next-scene scene))
+      (_         scene))
+    )
+  )
 
 ;;;; Tests
 (ert-deftest test-marine-on-next-frame ()
   (let* ((frames (list 1 2 3 4))
          (scene (make-marine-scene
-                :frames        frames
-                :current-frame 3
-                :on-next-frame (lambda (_current frames) (nth 0 frames)))))
+                 :frames        frames
+                 :current-frame 3
+                 :on-next-frame (lambda (_current frames) (nth 0 frames)))))
     (should (equal
              (marine-get-next-frame scene)
              1))))
@@ -99,15 +118,31 @@
          (result        (marine-get-next-not-current-frame current-frame frames idx-gen)))
     (should (equal result 3))))
 
-(ert-deftest test-marine-get-scene ()
+(ert-deftest test-marine-next-same-frame ()
+  (let* ((frames (list 2 3))
+         (scene (make-marine-scene
+                 :frames        frames
+                 :current-frame 1
+                 :on-next-frame 'marine-get-next-same-frame)))
+    (should (equal
+             (marine-get-next-frame scene)
+             1))))
+
+(ert-deftest test-marine-make-scene ()
   (let ((scene-1 (marine-make-scene 'glance 2))
         (scene-2 (marine-make-scene 'glance 5)))
     (should
      (and
-      (equal scene-1 (marine-make-scene-0 marine-list-glance-2 2))
-      (equal scene-2 (marine-make-scene-0 marine-list-glance-5 5))))))
+      (equal scene-1 (marine-make-scene-0 marine-list-glance-2 2 'infinite 'marine-get-next-random-frame))
+      (equal scene-2 (marine-make-scene-0 marine-list-glance-5 5 'infinite 'marine-get-next-random-frame))))))
 
-
+(ert-deftest test-marine-next-scene ()
+  (let* ((inf-scene (marine-make-scene 'glance 2))
+         (scene-0   (marine-make-scene 'ouch   2 inf-scene)))
+    (marine-decrement-duration scene-0)
+    (should (and
+             (should (equal (marine-next-scene scene-0) inf-scene))
+             (should (equal (marine-next-scene inf-scene) inf-scene))))))
 ;;;; Main
 (setq marine-current-scene (marine-make-scene 'glance 5))
 (setq marine-current-image (marine-scene-current-frame marine-current-scene))
@@ -120,20 +155,26 @@
     (spaceline-compile)))
 
 (defun marine-async-render-loop ()
-    (async-start
-     (lambda ()
-       (sleep-for 1))
-     (lambda (res)
-       (marine-render)
-       (marine-async-render-loop))))
+  (async-start
+   (lambda ()
+     (sleep-for 1))
+   (lambda (res)
+     (marine-render)
+     (marine-async-render-loop))))
 
 (defun marine-render ()
-  (setq marine-current-image (marine-get-next-frame marine-current-scene)))
+  (setq marine-current-scene (marine-next-scene marine-current-scene))
+  (setq marine-current-image (marine-get-next-frame marine-current-scene))
+  (marine-decrement-duration marine-current-scene))
 
 (defun marine-start-async-render-loop ()
   (when (not (boundp 'marine-async-loop-is-running))
     (setq marine-async-loop-is-running t)
     (marine-async-render-loop)))
+
+(defun marine-reset-current-scene (new-scene)
+  (setq marine-current-scene new-scene)
+  (setq marine-current-image (marine-scene-current-frame new-scene)))
 
 (defun marine-add-compile-hooks ()
   (add-hook 'compilation-start-hook (lambda (_)
@@ -143,7 +184,9 @@
 
   (add-hook 'compilation-finish-functions (lambda (buf msg)
                                             (if (string-match "exited abnormally" msg)
-                                               (marine-reset-current-scene (marine-make-scene 'glance 2))
+                                                (let* ((next-scene (marine-make-scene 'glance 2))
+                                                       (ouch       (marine-make-scene 'ouch   2 next-scene)))
+                                                  (marine-reset-current-scene ouch))
                                               (marine-reset-current-scene (marine-make-scene 'glance 5))))))
 
 (defun marine-main ()
