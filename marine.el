@@ -1,3 +1,7 @@
+(require 'dash)
+(require 'cl)
+(require 'async)
+
 (defconst marine-root-path (file-name-directory (or load-file-name buffer-file-name)))
 (defconst marine-image-padding 3)
 
