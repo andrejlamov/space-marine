@@ -77,7 +77,8 @@
    frames))
 
 (defun marine-reset-current-scene (new-scene)
-  (setq marine-current-scene new-scene))
+  (setq marine-current-scene new-scene)
+  (setq marine-current-image (marine-scene-current-frame new-scene)))
 
 
 ;;;; Tests
