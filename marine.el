@@ -31,10 +31,10 @@
 (defconst marine-image-attacked-right-2    (marine-load-image "attacked-right-2.xpm"))
 (defconst marine-image-attacked-straight-2 (marine-load-image "attacked-straight-2.xpm"))
 
-(defconst marine-list-glance-5   (list marine-image-straight-5      marine-image-glance-left-5    marine-image-glance-right-5))
-(defconst marine-list-glance-2   (list marine-image-straight-2      marine-image-glance-left-2    marine-image-glance-right-2))
-(defconst marine-list-attacked-5 (list marine-image-attacked-left-5 marine-image-attacked-right-5 marine-image-attacked-straight-5))
-(defconst marine-list-attacked-2 (list marine-image-attacked-left-2 marine-image-attacked-right-2 marine-image-attacked-straight-2))
+(defconst marine-list-glance-5   (list marine-image-straight-5          marine-image-glance-left-5   marine-image-glance-right-5))
+(defconst marine-list-glance-2   (list marine-image-straight-2          marine-image-glance-left-2   marine-image-glance-right-2))
+(defconst marine-list-attacked-5 (list marine-image-attacked-straight-5 marine-image-attacked-left-5 marine-image-attacked-right-5))
+(defconst marine-list-attacked-2 (list marine-image-attacked-straight-2 marine-image-attacked-left-2 marine-image-attacked-right-2))
 
 (cl-defstruct marine-scene frames current-frame on-next-frame health)
 
@@ -50,7 +50,7 @@
 (defun marine-make-scene-0 (image-list health)
   (make-marine-scene
    :frames image-list
-   :current-frame (car image-list)
+   :current-frame (car image-list) ;; always use first image by default
    :on-next-frame 'marine-get-next-random-frame
    :health health))
 
