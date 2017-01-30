@@ -6,7 +6,7 @@
 (defconst marine-image-padding 3)
 
 (defun marine-image-path (file-name)
-  (concat marine-root-path file-name))
+  (concat marine-root-path "img/" file-name))
 
 (defun marine-image-height (height padding)
   (- height padding))
