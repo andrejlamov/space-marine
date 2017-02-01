@@ -48,8 +48,8 @@
 (defun marine-get-next-not-current-frame (current-frame frames idx-gen)
   (let* ((not-current-list (marine-filter-not-current current-frame frames))
          (new-length       (length not-current-list))
-         (random-idx       (funcall idx-gen new-length)))
-    (nth random-idx not-current-list)))
+         (idx       (funcall idx-gen new-length)))
+    (nth idx not-current-list)))
 
 (defun marine-get-next-random-frame (current-frame frames)
   (marine-get-next-not-current-frame current-frame frames 'random))
@@ -57,13 +57,13 @@
 (defun marine-get-next-same-frame (current-frame _frames)
   current-frame)
 
-(defun marine-make-scene-0 (image-list health loops on-next-frame &optional next-scene)
+(defun marine-make-scene-0 (image-list health duration on-next-frame &optional next-scene)
   (make-marine-scene
    :frames image-list
    :current-frame (car image-list) ;; always use first image by default
    :on-next-frame on-next-frame
    :health health
-   :duration loops
+   :duration duration
    :next-scene next-scene))
 
 (defun marine-make-scene (type health &optional next-scene)
@@ -93,15 +93,15 @@
    frames))
 
 (defun marine-decrement-duration (scene)
-  (let ((loops (marine-scene-duration scene)))
-    (pcase loops
+  (let ((duration (marine-scene-duration scene)))
+    (pcase duration
       (`infinite nil)
       (_         (cl-decf (marine-scene-duration scene))))
     scene))
 
 (defun marine-next-scene (scene)
-  (let ((loops (marine-scene-duration scene)))
-    (pcase loops
+  (let ((duration (marine-scene-duration scene)))
+    (pcase duration
       (`infinite scene)
       (0         (marine-scene-next-scene scene))
       (_         scene))
